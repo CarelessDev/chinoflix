@@ -13,21 +13,31 @@ const client = new Client({
 
 const discordTogether = new DiscordTogether(client);
 
+const commands = {
+  chinoflix: {
+    command: "youtube",
+    description: "Start Netflix",
+  },
+  fuyuchess: {
+    command: "chess",
+    description: "Play Chess",
+  },
+};
+
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isCommand()) return;
 
-  if (interaction.commandName == "chinoflix") {
-    const member = interaction.member;
+  const member = interaction.member;
+  if (!(member instanceof GuildMember)) return;
 
-    if (!(member instanceof GuildMember)) return;
+  if (!(interaction.commandName in commands)) return;
 
-    const invite = await discordTogether.createTogetherCode(
-      member.voice.channel.id,
-      "youtube"
-    );
+  const invite = await discordTogether.createTogetherCode(
+    member.voice.channel.id,
+    commands[interaction.commandName].command
+  );
 
-    await interaction.reply(`${invite.code}`);
-  }
+  await interaction.reply(`${invite.code}`);
 });
 
 client.login(process.env.DISCORD_TOKEN);
@@ -42,15 +52,21 @@ client.on("ready", () => {
     const guild = client.guilds.cache.get(guildId);
 
     try {
-      guild.commands.create({
-        name: "chinoflix",
-        description: "Start Netflix",
-      });
+      for (const command in commands) {
+        guild.commands.create({
+          name: command,
+          description: commands[command].description,
+        });
+      }
     } catch (err) {
       console.log(`${guildId} is invalid : ${err}`);
     }
   }
 
+  client.user.setActivity({
+    name: "Chinoflix",
+    type: "WATCHING",
+  });
   setInterval(
     () =>
       client.user.setActivity({
